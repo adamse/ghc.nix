@@ -69,7 +69,8 @@ let
       ++ optional withDwarf elfutils
       ++ optional withGhcid ghcid
       ++ optional withIde (nixpkgs-unstable.haskell-language-server.override { supportedGhcVersions = [ (builtins.replaceStrings ["."] [""] ghc.version) ]; })
-      ++ optional withDtrace linuxPackages.systemtap
+      ++ lib.optionals (withDtrace && stdenv.isLinux)
+          [ linuxPackages.systemtap libsystemtap ]
       ++ (if (! stdenv.isDarwin)
           then [ pxz ]
           else [
@@ -132,6 +133,10 @@ in
                           "--with-libdw-includes=${elfutils}/include"
                           "--with-libdw-libraries=${elfutils}/lib"
                           "--enable-dwarf-unwind"
+                        ] ++ lib.optionals withDtrace [
+                          "--enable-dtrace"
+                        ] ++ lib.optionals (withDtrace && stdenv.isLinux) [
+                          "--with-libsystemtap-includes=${libsystemtap}/include"
                         ];
 
   shellHook           = let toYesNo = b: if b then "YES" else "NO"; in ''
